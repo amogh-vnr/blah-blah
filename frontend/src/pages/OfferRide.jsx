@@ -10,8 +10,7 @@ function OfferRide() {
     to: '',
     date: '',
     price: '',
-    seats: '3',
-    driver: 'You (Driver)'
+    seats: '3'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -24,6 +23,13 @@ function OfferRide() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+      alert("Please sign in with Google first to publish a ride!");
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
@@ -32,14 +38,16 @@ function OfferRide() {
         price: Number(formData.price),
         seats: Number(formData.seats),
         date: new Date(formData.date).toISOString()
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       
-      // Simulate success and redirect
       setTimeout(() => {
         navigate('/search');
-      }, 1000);
+      }, 500);
     } catch (error) {
       console.error('Error publishing ride', error);
+      alert(error.response?.data?.message || "Failed to publish ride");
       setIsSubmitting(false);
     }
   };
@@ -64,7 +72,7 @@ function OfferRide() {
               name="from" 
               required 
               className="input-field" 
-              placeholder="e.g. London"
+              placeholder="e.g. Mumbai"
               value={formData.from}
               onChange={handleChange}
             />
@@ -78,7 +86,7 @@ function OfferRide() {
               name="to" 
               required 
               className="input-field" 
-              placeholder="e.g. Manchester"
+              placeholder="e.g. Pune"
               value={formData.to}
               onChange={handleChange}
             />
@@ -115,16 +123,19 @@ function OfferRide() {
           </div>
 
           <div className="input-group">
-            <label htmlFor="price"><DollarSign size={16} className="inline mr-2" />Price per seat (£)</label>
+            <label htmlFor="price">
+              <span className="inline mr-2" style={{ fontWeight: 'bold' }}>₹</span>
+              Price per seat (INR)
+            </label>
             <input 
               type="number" 
               id="price" 
               name="price" 
               min="1" 
-              step="0.5"
+              step="10"
               required 
               className="input-field" 
-              placeholder="e.g. 25"
+              placeholder="e.g. 500"
               value={formData.price}
               onChange={handleChange}
             />

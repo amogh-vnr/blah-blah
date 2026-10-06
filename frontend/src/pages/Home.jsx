@@ -32,7 +32,6 @@ function Home() {
           overflow: 'hidden'
         }}
       >
-        {/* Decorative elements */}
         <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '400px', height: '400px', borderRadius: '50%', background: 'rgba(0,175,245,0.1)', filter: 'blur(60px)' }}></div>
         <div style={{ position: 'absolute', bottom: '-10%', left: '-5%', width: '300px', height: '300px', borderRadius: '50%', background: 'rgba(255,94,91,0.1)', filter: 'blur(50px)' }}></div>
         
@@ -44,7 +43,7 @@ function Home() {
               <MapPin size={24} className="text-muted" />
               <input 
                 type="text" 
-                placeholder="Leaving from" 
+                placeholder="Leaving from (e.g. Mumbai)" 
                 className="input-field" 
                 style={{ border: 'none', background: 'transparent', padding: '8px 0' }}
                 value={from}
@@ -56,7 +55,7 @@ function Home() {
               <MapPin size={24} className="text-muted" />
               <input 
                 type="text" 
-                placeholder="Going to" 
+                placeholder="Going to (e.g. Pune)" 
                 className="input-field" 
                 style={{ border: 'none', background: 'transparent', padding: '8px 0' }}
                 value={to}

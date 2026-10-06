@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Car, MapPin, Calendar, DollarSign, Users } from 'lucide-react';
+import { Car, MapPin, Calendar, Users } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 function OfferRide() {
   const navigate = useNavigate();
+  const { token } = useAuth();
+  
   const [formData, setFormData] = useState({
     from: '',
     to: '',
@@ -23,13 +26,6 @@ function OfferRide() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
-    
-    if (!token) {
-      alert("Please sign in with Google first to publish a ride!");
-      return;
-    }
-
     setIsSubmitting(true);
     
     try {

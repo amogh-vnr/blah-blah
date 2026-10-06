@@ -1,8 +1,9 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import SearchRides from './pages/SearchRides';
 import OfferRide from './pages/OfferRide';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
@@ -13,7 +14,14 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/search" element={<SearchRides />} />
-            <Route path="/offer" element={<OfferRide />} />
+            <Route 
+              path="/offer" 
+              element={
+                <ProtectedRoute>
+                  <OfferRide />
+                </ProtectedRoute>
+              } 
+            />
           </Routes>
         </main>
       </div>

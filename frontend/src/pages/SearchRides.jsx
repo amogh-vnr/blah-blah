@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { MapPin, Calendar, Users, Loader2, CheckCircle2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 function SearchRides() {
   const [rides, setRides] = useState([]);
@@ -9,7 +10,9 @@ function SearchRides() {
   const [bookingRide, setBookingRide] = useState(null);
   const [bookingSuccess, setBookingSuccess] = useState(null);
   
+  const { user, token } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   
   const from = searchParams.get('from') || '';
@@ -27,7 +30,7 @@ function SearchRides() {
       if (seats) params.append('seats', seats);
 
       const response = await axios.get(`http://localhost:5000/api/rides?${params.toString()}`);
-      setRides(response.data);
+      setRides(response.data.data || []);
     } catch (error) {
       console.error('Error fetching rides', error);
     } finally {
@@ -40,16 +43,15 @@ function SearchRides() {
   }, [location.search]);
 
   const handleBook = async (rideId) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      alert("Please sign in with Google first to book a ride!");
+    if (!user) {
+      navigate('/', { state: { message: 'You must be logged in to book a ride. Please sign in above.' } });
       return;
     }
 
     try {
       setBookingRide(rideId);
       await axios.post(
-        `http://localhost:5000/api/rides/${rideId}/book`, 
+        `http://localhost:5000/api/bookings/${rideId}`, 
         { seats: parseInt(seats) },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -88,7 +90,6 @@ function SearchRides() {
         <div className="flex flex-col items-center justify-center py-20">
           <Loader2 size={48} className="text-primary animate-spin mb-4" style={{ animation: 'spin 1s linear infinite' }} />
           <p className="text-body">Searching for best rides...</p>
-          <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
         </div>
       ) : rides.length > 0 ? (
         <div className="flex flex-col gap-6">

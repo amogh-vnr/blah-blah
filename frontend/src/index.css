@@ -172,6 +172,10 @@ button {
   gap: 12px;
 }
 
+.nav-button {
+  display: inline-flex;
+}
+
 @media (max-width: 768px) {
   .search-bar-glass {
     flex-direction: column;
@@ -179,6 +183,14 @@ button {
     padding: 24px;
   }
   .title-xl { font-size: 2.5rem; }
+  
+  .auth-hero {
+    display: none !important;
+  }
+  
+  .nav-button {
+    display: none !important;
+  }
 }
 
 /* Navigation */

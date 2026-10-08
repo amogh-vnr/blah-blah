@@ -42,3 +42,12 @@ exports.createRide = async (req, res, next) => {
     next(error);
   }
 };
+
+exports.getMyPublishedRides = async (req, res, next) => {
+  try {
+    const rides = await Ride.find({ driver: req.user.id }).populate('driver', 'name picture');
+    res.status(200).json({ success: true, count: rides.length, data: rides });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -1,9 +1,12 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 const Ride = require('./models/Ride');
 const Booking = require('./models/Booking');
+const Negotiation = require('./models/Negotiation');
+const Message = require('./models/Message');
+const Review = require('./models/Review');
+const RideRequest = require('./models/RideRequest');
 
 dotenv.config();
 
@@ -12,17 +15,21 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/blahblahca
 const seedData = async () => {
   try {
     await mongoose.connect(MONGO_URI);
-    console.log('Connected to MongoDB for seeding...');
+    console.log('Connected to MongoDB for advanced seeding...');
 
-    // Clear existing data
+    // Clear collections
     await Booking.deleteMany({});
+    await Negotiation.deleteMany({});
+    await Message.deleteMany({});
+    await Review.deleteMany({});
+    await RideRequest.deleteMany({});
     await Ride.deleteMany({});
     await User.deleteMany({});
 
-    console.log('Cleared existing collections.');
+    console.log('Cleared existing data.');
 
-    // Create realistic drivers
-    const driversData = [
+    // Drivers & Passengers
+    const usersData = [
       {
         name: 'Rahul Sharma',
         email: 'rahul@example.com',
@@ -37,7 +44,7 @@ const seedData = async () => {
         password: 'password123',
         picture: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
         phone: '+91 98234 56789',
-        bio: 'Product manager travelling for weekend getaways. Love good conversations and 90s music.'
+        bio: 'Product manager travelling for weekend getaways. Love good conversations and 90s music. Women-only carpooler.'
       },
       {
         name: 'Amit Patel',
@@ -65,14 +72,13 @@ const seedData = async () => {
       }
     ];
 
-    const createdDrivers = [];
-    for (const d of driversData) {
-      const user = await User.create(d);
-      createdDrivers.push(user);
+    const createdUsers = [];
+    for (const u of usersData) {
+      const user = await User.create(u);
+      createdUsers.push(user);
     }
-    console.log(`Created ${createdDrivers.length} verified drivers.`);
+    console.log(`Created ${createdUsers.length} verified users.`);
 
-    // Helper to get future dates
     const now = new Date();
     const getDate = (daysAhead, hours, minutes = 0) => {
       const d = new Date(now);
@@ -82,159 +88,227 @@ const seedData = async () => {
     };
 
     const ridesData = [
-      // Mumbai -> Pune (multiple departures today, tomorrow, day after)
       {
         from: 'Mumbai',
         to: 'Pune',
-        date: getDate(0, 21, 30), // Later today
+        date: getDate(0, 22, 0),
         price: 350,
         seats: 3,
-        driver: createdDrivers[0]._id,
+        driver: createdUsers[0]._id, // Rahul
         vehicle: 'Maruti Ertiga',
-        vehicleColor: 'Pearl White'
+        vehicleColor: 'Pearl White',
+        ladiesOnly: false,
+        chattyLevel: 'BlaBla',
+        luggageSize: 'Large',
+        petsAllowed: true,
+        smokingAllowed: false,
+        acEnabled: true,
+        status: 'scheduled'
       },
       {
         from: 'Mumbai',
         to: 'Pune',
-        date: getDate(1, 7, 0), // Tomorrow morning
+        date: getDate(1, 8, 30),
         price: 360,
         seats: 3,
-        driver: createdDrivers[1]._id,
+        driver: createdUsers[1]._id, // Pooja (Ladies Only!)
         vehicle: 'Honda City',
-        vehicleColor: 'Silver Metallic'
+        vehicleColor: 'Silver Metallic',
+        ladiesOnly: true,
+        chattyLevel: 'BlaBlaBla',
+        luggageSize: 'Medium',
+        petsAllowed: false,
+        smokingAllowed: false,
+        acEnabled: true,
+        status: 'scheduled'
       },
       {
         from: 'Mumbai',
         to: 'Pune',
-        date: getDate(1, 14, 30), // Tomorrow afternoon
+        date: getDate(1, 14, 0),
         price: 380,
         seats: 2,
-        driver: createdDrivers[2]._id,
+        driver: createdUsers[2]._id, // Amit
         vehicle: 'Hyundai Creta',
-        vehicleColor: 'Phantom Black'
-      },
-      {
-        from: 'Mumbai',
-        to: 'Pune',
-        date: getDate(1, 18, 0), // Tomorrow evening
-        price: 350,
-        seats: 4,
-        driver: createdDrivers[0]._id,
-        vehicle: 'Maruti Ertiga',
-        vehicleColor: 'Pearl White'
-      },
-      {
-        from: 'Mumbai',
-        to: 'Pune',
-        date: getDate(2, 8, 30),
-        price: 340,
-        seats: 3,
-        driver: createdDrivers[1]._id,
-        vehicle: 'Honda City',
-        vehicleColor: 'Silver Metallic'
-      },
-      // Pune -> Mumbai
-      {
-        from: 'Pune',
-        to: 'Mumbai',
-        date: getDate(1, 9, 0),
-        price: 360,
-        seats: 3,
-        driver: createdDrivers[2]._id,
-        vehicle: 'Hyundai Creta',
-        vehicleColor: 'Phantom Black'
+        vehicleColor: 'Phantom Black',
+        ladiesOnly: false,
+        chattyLevel: 'Bla',
+        luggageSize: 'Large',
+        petsAllowed: true,
+        smokingAllowed: false,
+        acEnabled: true,
+        status: 'scheduled'
       },
       {
         from: 'Pune',
         to: 'Mumbai',
-        date: getDate(1, 17, 30),
+        date: getDate(1, 10, 0),
         price: 350,
-        seats: 2,
-        driver: createdDrivers[0]._id,
+        seats: 3,
+        driver: createdUsers[0]._id,
         vehicle: 'Maruti Ertiga',
-        vehicleColor: 'Pearl White'
+        vehicleColor: 'Pearl White',
+        ladiesOnly: false,
+        chattyLevel: 'BlaBla',
+        luggageSize: 'Medium',
+        petsAllowed: false,
+        smokingAllowed: false,
+        acEnabled: true,
+        status: 'scheduled'
       },
-      // New Delhi -> Chandigarh
       {
         from: 'New Delhi',
         to: 'Chandigarh',
         date: getDate(1, 6, 30),
         price: 480,
         seats: 3,
-        driver: createdDrivers[4]._id,
+        driver: createdUsers[4]._id, // Vikram
         vehicle: 'Skoda Slavia',
-        vehicleColor: 'Candy White'
+        vehicleColor: 'Candy White',
+        ladiesOnly: false,
+        chattyLevel: 'Bla',
+        luggageSize: 'Medium',
+        petsAllowed: false,
+        smokingAllowed: false,
+        acEnabled: true,
+        status: 'scheduled'
       },
-      {
-        from: 'New Delhi',
-        to: 'Chandigarh',
-        date: getDate(1, 16, 0),
-        price: 490,
-        seats: 2,
-        driver: createdDrivers[4]._id,
-        vehicle: 'Skoda Slavia',
-        vehicleColor: 'Candy White'
-      },
-      // Bengaluru -> Mysuru
       {
         from: 'Bengaluru',
         to: 'Mysuru',
-        date: getDate(1, 8, 0),
+        date: getDate(1, 7, 30),
         price: 300,
         seats: 3,
-        driver: createdDrivers[3]._id,
+        driver: createdUsers[3]._id, // Sneha (Ladies Only!)
         vehicle: 'Kia Seltos',
-        vehicleColor: 'Gravity Grey'
+        vehicleColor: 'Gravity Grey',
+        ladiesOnly: true,
+        chattyLevel: 'BlaBla',
+        luggageSize: 'Medium',
+        petsAllowed: false,
+        smokingAllowed: false,
+        acEnabled: true,
+        status: 'scheduled'
       },
-      {
-        from: 'Bengaluru',
-        to: 'Mysuru',
-        date: getDate(1, 17, 0),
-        price: 310,
-        seats: 3,
-        driver: createdDrivers[3]._id,
-        vehicle: 'Kia Seltos',
-        vehicleColor: 'Gravity Grey'
-      },
-      // Chennai -> Pondicherry
       {
         from: 'Chennai',
         to: 'Pondicherry',
-        date: getDate(1, 7, 30),
+        date: getDate(1, 8, 0),
         price: 320,
         seats: 3,
-        driver: createdDrivers[1]._id,
+        driver: createdUsers[1]._id,
         vehicle: 'Honda City',
-        vehicleColor: 'Silver Metallic'
+        vehicleColor: 'Silver Metallic',
+        ladiesOnly: true,
+        chattyLevel: 'BlaBlaBla',
+        luggageSize: 'Small',
+        petsAllowed: false,
+        smokingAllowed: false,
+        acEnabled: true,
+        status: 'scheduled'
       },
-      // Hyderabad -> Vijayawada
       {
         from: 'Hyderabad',
         to: 'Vijayawada',
         date: getDate(1, 6, 0),
         price: 550,
         seats: 3,
-        driver: createdDrivers[2]._id,
+        driver: createdUsers[2]._id,
         vehicle: 'Hyundai Creta',
-        vehicleColor: 'Phantom Black'
+        vehicleColor: 'Phantom Black',
+        ladiesOnly: false,
+        chattyLevel: 'BlaBla',
+        luggageSize: 'Large',
+        petsAllowed: true,
+        smokingAllowed: false,
+        acEnabled: true,
+        status: 'scheduled'
       },
-      // Pune -> Goa
       {
         from: 'Pune',
         to: 'Goa',
         date: getDate(2, 6, 0),
         price: 850,
         seats: 3,
-        driver: createdDrivers[0]._id,
+        driver: createdUsers[0]._id,
         vehicle: 'Maruti Ertiga',
-        vehicleColor: 'Pearl White'
+        vehicleColor: 'Pearl White',
+        ladiesOnly: false,
+        chattyLevel: 'BlaBla',
+        luggageSize: 'Large',
+        petsAllowed: true,
+        smokingAllowed: false,
+        acEnabled: true,
+        status: 'scheduled'
       }
     ];
 
     const createdRides = await Ride.insertMany(ridesData);
-    console.log(`Created ${createdRides.length} realistic rides.`);
+    console.log(`Created ${createdRides.length} enriched rides.`);
 
-    console.log('Seed completed successfully!');
+    // Seed Reviews
+    await Review.create([
+      {
+        ride: createdRides[0]._id,
+        reviewer: createdUsers[1]._id, // Pooja reviewed Rahul
+        reviewee: createdUsers[0]._id,
+        rating: 5,
+        tags: ['Punctual', 'Safe Driver', 'Clean Car', 'Friendly'],
+        comment: 'Excellent trip! Rahul was right on time at Dadar circle. Smooth highway driving and very polite.'
+      },
+      {
+        ride: createdRides[2]._id,
+        reviewer: createdUsers[3]._id, // Sneha reviewed Amit
+        reviewee: createdUsers[2]._id,
+        rating: 5,
+        tags: ['Safe Driver', 'Clean Car'],
+        comment: 'Very spacious car and comfortable drive. Plenty of room for baggage.'
+      }
+    ]);
+    console.log('Created sample verified reviews.');
+
+    // Seed Sample Messages
+    await Message.create([
+      {
+        ride: createdRides[0]._id,
+        sender: createdUsers[1]._id, // Pooja
+        recipient: createdUsers[0]._id, // Rahul
+        text: 'Hi Rahul! Where exactly is the pickup landmark at Dadar?',
+        quickAction: 'Where is the pickup landmark?'
+      },
+      {
+        ride: createdRides[0]._id,
+        sender: createdUsers[0]._id, // Rahul
+        recipient: createdUsers[1]._id, // Pooja
+        text: 'Hey Pooja! Right near the TT circle flower market flyover pillar 12. See you there!'
+      }
+    ]);
+    console.log('Created sample conversation thread.');
+
+    // Seed Sample Ride Request
+    await RideRequest.create([
+      {
+        passenger: createdUsers[1]._id,
+        from: 'Thane',
+        to: 'Pune',
+        date: getDate(1, 18, 30),
+        seats: 2,
+        maxBudget: 400,
+        notes: 'Need pickup near Viviana Mall. Flexible with time by 30 mins.'
+      },
+      {
+        passenger: createdUsers[3]._id,
+        from: 'Bengaluru (Koramangala)',
+        to: 'Mysuru',
+        date: getDate(2, 9, 0),
+        seats: 1,
+        maxBudget: 350,
+        notes: 'Travelling with small cabin bag. Ladies only preferred.'
+      }
+    ]);
+    console.log('Created sample ride requests on board.');
+
+    console.log('Advanced seed completed successfully!');
     process.exit(0);
   } catch (error) {
     console.error('Seed error:', error);

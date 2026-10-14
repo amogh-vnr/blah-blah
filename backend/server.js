@@ -9,6 +9,10 @@ const morgan = require('morgan');
 const authRoutes = require('./routes/authRoutes');
 const rideRoutes = require('./routes/rideRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
+const negotiationRoutes = require('./routes/negotiationRoutes');
+const messageRoutes = require('./routes/messageRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
+const requestRoutes = require('./routes/requestRoutes');
 
 // Middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -34,6 +38,10 @@ app.use(morgan('dev'));
 app.use('/api/auth', authRoutes);
 app.use('/api/rides', rideRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/negotiations', negotiationRoutes);
+app.use('/api/messages', messageRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/requests', requestRoutes);
 
 // Custom Error Handler
 app.use(errorHandler);

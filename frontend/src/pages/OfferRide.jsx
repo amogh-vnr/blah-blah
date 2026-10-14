@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   Car, MapPin, Calendar, Users, DollarSign, ShieldCheck, 
-  Sparkles, CheckCircle2, AlertCircle, ChevronDown, Award, TrendingUp, Loader2
+  Sparkles, CheckCircle2, AlertCircle, ChevronDown, Award, 
+  TrendingUp, Loader2, Volume2, Briefcase, Dog, Snowflake
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Footer from '../components/Footer';
@@ -12,7 +13,6 @@ function OfferRide() {
   const navigate = useNavigate();
   const { token, user } = useAuth();
   
-  // Tomorrow's date formatted for datetime-local
   const getDefaultDateTime = () => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
@@ -27,7 +27,12 @@ function OfferRide() {
     price: '350',
     seats: '3',
     vehicle: 'Maruti Ertiga',
-    vehicleColor: 'Pearl White'
+    vehicleColor: 'Pearl White',
+    ladiesOnly: false,
+    chattyLevel: 'BlaBla',
+    luggageSize: 'Medium',
+    petsAllowed: false,
+    acEnabled: true
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,9 +40,10 @@ function OfferRide() {
   const [openFaq, setOpenFaq] = useState(null);
 
   const handleChange = (e) => {
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: value
     });
   };
 
@@ -47,7 +53,6 @@ function OfferRide() {
     e.preventDefault();
     setError('');
 
-    // Validations
     if (!formData.from.trim() || !formData.to.trim()) {
       setError('Please provide both departure and destination cities.');
       return;
@@ -78,7 +83,12 @@ function OfferRide() {
         price: Number(formData.price),
         seats: Number(formData.seats),
         vehicle: formData.vehicle.trim(),
-        vehicleColor: formData.vehicleColor.trim()
+        vehicleColor: formData.vehicleColor.trim(),
+        ladiesOnly: formData.ladiesOnly,
+        chattyLevel: formData.chattyLevel,
+        luggageSize: formData.luggageSize,
+        petsAllowed: formData.petsAllowed,
+        acEnabled: formData.acEnabled
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -90,25 +100,6 @@ function OfferRide() {
       setIsSubmitting(false);
     }
   };
-
-  const driverFaqs = [
-    {
-      q: 'How much does it cost to publish a ride?',
-      a: 'Publishing a ride on BlahBlahCar is 100% free! We do not charge listing fees or driver commissions.'
-    },
-    {
-      q: 'How do passengers pay me for the ride?',
-      a: 'Passengers pay you directly when they board or reach the destination via instant UPI or cash.'
-    },
-    {
-      q: 'Can I choose who travels with me?',
-      a: 'Yes, you can view passenger profiles, ratings, and past reviews before meeting at the pickup landmark.'
-    },
-    {
-      q: 'What if I need to cancel or modify my published ride?',
-      a: 'You can easily manage and delete your published rides anytime from your BlahBlahCar Dashboard.'
-    }
-  ];
 
   return (
     <div style={{ backgroundColor: 'var(--bg-page)', minHeight: 'calc(100vh - 70px)' }}>
@@ -130,13 +121,13 @@ function OfferRide() {
             Become a BlahBlahCar driver and save on travel costs
           </h1>
           <p style={{ fontSize: '1.15rem', color: 'rgba(255,255,255,0.9)', maxWidth: '600px', margin: '0 auto' }}>
-            Share your empty seats with verified passengers on your route and cover your petrol and toll expenses.
+            Share empty seats with verified passengers on your route and offset your fuel and highway tolls.
           </p>
         </div>
       </section>
 
-      {/* Main Publishing Form (Overlapping the hero) */}
-      <div className="container" style={{ marginTop: '-40px', maxWidth: '780px', marginBottom: '60px' }}>
+      {/* Main Publishing Form */}
+      <div className="container" style={{ marginTop: '-40px', maxWidth: '820px', marginBottom: '60px' }}>
         <div className="card" style={{ padding: '40px', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--border-light)' }}>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', borderBottom: '1px solid var(--border-light)', paddingBottom: '16px' }}>
@@ -145,7 +136,7 @@ function OfferRide() {
             </div>
             <div>
               <h2 className="heading-sm" style={{ margin: 0 }}>Publish a Carpool Ride</h2>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>Enter your travel itinerary and car details</p>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>Configure route, fare, luggage and ride preferences</p>
             </div>
           </div>
 
@@ -267,8 +258,90 @@ function OfferRide() {
               </div>
             </div>
 
-            {/* Dynamic Real-Time Savings Calculator Box */}
-            <div style={{ background: 'linear-gradient(135deg, #EBF3FD 0%, #D8E7FA 100%)', border: '1px solid #BFD9F7', borderRadius: '16px', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
+            {/* Preferences: BlaBla Meter, Luggage & Ladies Only */}
+            <div style={{ background: 'var(--bg-page)', padding: '20px', borderRadius: '14px', border: '1px solid var(--border-light)' }}>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '14px' }}>
+                Ride Preferences & "BlaBla" Meter
+              </h4>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '14px' }}>
+                
+                {/* Chatty Meter */}
+                <div className="input-group">
+                  <label htmlFor="chattyLevel" style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Volume2 size={15} color="var(--primary)" /> Chatty Meter
+                  </label>
+                  <select 
+                    id="chattyLevel" 
+                    name="chattyLevel" 
+                    value={formData.chattyLevel} 
+                    onChange={handleChange}
+                    className="input-field"
+                    style={{ padding: '10px 12px', fontSize: '0.85rem' }}
+                  >
+                    <option value="Bla">Bla (Quiet, prefer music)</option>
+                    <option value="BlaBla">BlaBla (Friendly, like chatting)</option>
+                    <option value="BlaBlaBla">BlaBlaBla (Loves sharing road stories)</option>
+                  </select>
+                </div>
+
+                {/* Luggage Size */}
+                <div className="input-group">
+                  <label htmlFor="luggageSize" style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Briefcase size={15} color="var(--primary)" /> Luggage Allowance
+                  </label>
+                  <select 
+                    id="luggageSize" 
+                    name="luggageSize" 
+                    value={formData.luggageSize} 
+                    onChange={handleChange}
+                    className="input-field"
+                    style={{ padding: '10px 12px', fontSize: '0.85rem' }}
+                  >
+                    <option value="Small">Small bag / backpack</option>
+                    <option value="Medium">Medium trolley suitcase</option>
+                    <option value="Large">Large heavy luggage</option>
+                  </select>
+                </div>
+
+              </div>
+
+              {/* Toggles: Ladies Only, AC, Pets */}
+              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
+                <label className="checkbox-option" style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                  <input 
+                    type="checkbox" 
+                    name="ladiesOnly"
+                    checked={formData.ladiesOnly} 
+                    onChange={handleChange} 
+                  />
+                  <span>🌸 Ladies Only Ride</span>
+                </label>
+
+                <label className="checkbox-option" style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                  <input 
+                    type="checkbox" 
+                    name="acEnabled"
+                    checked={formData.acEnabled} 
+                    onChange={handleChange} 
+                  />
+                  <span>❄️ Air Conditioning</span>
+                </label>
+
+                <label className="checkbox-option" style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                  <input 
+                    type="checkbox" 
+                    name="petsAllowed"
+                    checked={formData.petsAllowed} 
+                    onChange={handleChange} 
+                  />
+                  <span>🐾 Pets Welcome</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Dynamic Savings Calculator */}
+            <div style={{ background: 'linear-gradient(135deg, #EBF3FD 0%, #D8E7FA 100%)', border: '1px solid #BFD9F7', borderRadius: '16px', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontWeight: 700, fontSize: '0.95rem' }}>
                   <Sparkles size={18} /> Estimated Trip Savings
@@ -292,7 +365,6 @@ function OfferRide() {
               type="submit" 
               className="btn btn-primary btn-full btn-lg" 
               disabled={isSubmitting}
-              style={{ marginTop: '10px' }}
             >
               {isSubmitting ? <Loader2 size={20} className="spinner" /> : 'Publish Ride Now'}
             </button>
@@ -300,152 +372,6 @@ function OfferRide() {
 
         </div>
       </div>
-
-      {/* 3 Value Pillars */}
-      <section className="py-16 container">
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <h2 className="heading-lg" style={{ marginBottom: '8px' }}>Drive. Share. Save.</h2>
-          <p className="text-body">Here is why over 21 million drivers choose BlahBlahCar for their highway journeys.</p>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '32px' }}>
-          <div className="card" style={{ padding: '32px', textAlign: 'center', border: '1px solid var(--border-light)' }}>
-            <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-              <ShieldCheck size={28} color="var(--primary)" />
-            </div>
-            <h3 className="heading-sm mb-2">Drive with peace of mind</h3>
-            <p className="text-body">
-              You know who you are travelling with. We verify telephone numbers, email addresses, and member IDs.
-            </p>
-          </div>
-
-          <div className="card" style={{ padding: '32px', textAlign: 'center', border: '1px solid var(--border-light)' }}>
-            <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#E8F5E9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-              <Car size={28} color="#2E7D32" />
-            </div>
-            <h3 className="heading-sm mb-2">Carpooling made effortless</h3>
-            <p className="text-body">
-              Publish in under a minute. Manage booking requests on your dashboard with complete control.
-            </p>
-          </div>
-
-          <div className="card" style={{ padding: '32px', textAlign: 'center', border: '1px solid var(--border-light)' }}>
-            <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#FFF3E0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-              <TrendingUp size={28} color="#EF6C00" />
-            </div>
-            <h3 className="heading-sm mb-2">Save on highway travel</h3>
-            <p className="text-body">
-              Save up to ₹8,000 every month by sharing empty seats with polite, verified commuters.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Driver Testimonial Section */}
-      <section className="py-16" style={{ backgroundColor: 'white' }}>
-        <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '40px', alignItems: 'center' }}>
-            <div>
-              <img 
-                src="/driver-testimonial.jpg" 
-                alt="BlahBlahCar verified driver" 
-                style={{ borderRadius: '20px', width: '100%', maxHeight: '400px', objectFit: 'cover', boxShadow: 'var(--shadow-md)' }}
-              />
-            </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#F59E0B', marginBottom: '12px' }}>
-                <Award size={22} color="#F59E0B" />
-                <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>Top Ambassador Driver</span>
-              </div>
-              <h3 className="heading-md" style={{ marginBottom: '16px', lineHeight: 1.3 }}>
-                "Covering toll and petrol expenses turned my Mumbai-Pune trips into completely free commutes!"
-              </h3>
-              <p className="text-body" style={{ marginBottom: '20px', fontSize: '1.05rem', lineHeight: 1.6 }}>
-                "I used to drive alone every weekend on the Mumbai-Pune expressway. With BlahBlahCar, I publish my seats two days in advance. My seats are booked within hours, and the passengers are punctual professionals."
-              </p>
-              <div>
-                <strong style={{ fontSize: '1.05rem', color: 'var(--text-main)' }}>Amit Patel</strong>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Maruti Ertiga Owner &bull; 64 trips published</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 3 Step Guide */}
-      <section className="py-20 container">
-        <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-          <h2 className="heading-lg" style={{ marginBottom: '8px' }}>Publish in 3 easy steps</h2>
-          <p className="text-body">Join millions of car owners sharing rides every day.</p>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '32px' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: '1.5rem', fontWeight: 800 }}>
-              1
-            </div>
-            <h4 className="heading-sm mb-2">Create your account</h4>
-            <p className="text-body">Sign up for free and verify your phone number and ID to build trust.</p>
-          </div>
-
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: '1.5rem', fontWeight: 800 }}>
-              2
-            </div>
-            <h4 className="heading-sm mb-2">Publish your itinerary</h4>
-            <p className="text-body">Specify your route, departure time, seats offered and fair price.</p>
-          </div>
-
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: '1.5rem', fontWeight: 800 }}>
-              3
-            </div>
-            <h4 className="heading-sm mb-2">Drive & collect costs</h4>
-            <p className="text-body">Meet at the designated landmark and receive direct UPI or cash.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Driver FAQ Section */}
-      <section className="py-16" style={{ backgroundColor: 'white' }}>
-        <div className="container" style={{ maxWidth: '850px' }}>
-          <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-            <h2 className="heading-lg" style={{ marginBottom: '8px' }}>Driver FAQs</h2>
-            <p className="text-body">Answers to common driver questions regarding bookings and regulations.</p>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {driverFaqs.map((faq, index) => {
-              const isOpen = openFaq === index;
-              return (
-                <div 
-                  key={index} 
-                  className="card"
-                  style={{ padding: '20px 24px', cursor: 'pointer', border: '1px solid var(--border-light)' }}
-                  onClick={() => setOpenFaq(isOpen ? null : index)}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
-                      {faq.q}
-                    </h4>
-                    <ChevronDown 
-                      size={20} 
-                      color="var(--primary)" 
-                      style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} 
-                    />
-                  </div>
-
-                  {isOpen && (
-                    <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border-light)', color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.6 }}>
-                      {faq.a}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
 
       <Footer />
     </div>

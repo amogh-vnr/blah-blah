@@ -3,9 +3,12 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { 
   MapPin, Calendar, Users, Loader2, Star, Clock, 
-  ShieldCheck, Sparkles, Filter, ChevronRight, ArrowUpDown, X, Car
+  ShieldCheck, Sparkles, Filter, ChevronRight, ArrowUpDown, 
+  X, Car, Snowflake, Dog, Volume2, Briefcase, MessageSquare, PlusCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import RideRequestModal from '../components/RideRequestModal';
+import ChatDrawer from '../components/ChatDrawer';
 
 function SearchRides() {
   const [rides, setRides] = useState([]);
@@ -13,10 +16,18 @@ function SearchRides() {
   const [error, setError] = useState('');
 
   // Filters & Sorting state
-  const [sortBy, setSortBy] = useState('earliest'); // 'earliest', 'price', 'duration'
-  const [filterTime, setFilterTime] = useState([]); // 'morning', 'afternoon', 'evening'
+  const [sortBy, setSortBy] = useState('earliest');
+  const [filterTime, setFilterTime] = useState([]);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
-  const [maxTwoBack, setMaxTwoBack] = useState(false);
+  const [ladiesOnlyFilter, setLadiesOnlyFilter] = useState(false);
+  const [petsFilter, setPetsFilter] = useState(false);
+  const [acFilter, setAcFilter] = useState(false);
+  const [chattyFilter, setChattyFilter] = useState('');
+  const [luggageFilter, setLuggageFilter] = useState('');
+
+  // Modals state
+  const [requestModalOpen, setRequestModalOpen] = useState(false);
+  const [chatRide, setChatRide] = useState(null);
 
   const { user } = useAuth();
   const location = useLocation();
@@ -90,9 +101,28 @@ function SearchRides() {
       });
     }
 
-    // Filter by verified drivers
     if (verifiedOnly) {
       result = result.filter(ride => ride.driver && ride.driver.name);
+    }
+
+    if (ladiesOnlyFilter) {
+      result = result.filter(ride => ride.ladiesOnly === true);
+    }
+
+    if (petsFilter) {
+      result = result.filter(ride => ride.petsAllowed === true);
+    }
+
+    if (acFilter) {
+      result = result.filter(ride => ride.acEnabled !== false);
+    }
+
+    if (chattyFilter) {
+      result = result.filter(ride => ride.chattyLevel === chattyFilter);
+    }
+
+    if (luggageFilter) {
+      result = result.filter(ride => ride.luggageSize === luggageFilter);
     }
 
     // Sorting
@@ -103,7 +133,7 @@ function SearchRides() {
     }
 
     return result;
-  }, [rides, sortBy, filterTime, verifiedOnly, maxTwoBack]);
+  }, [rides, sortBy, filterTime, verifiedOnly, ladiesOnlyFilter, petsFilter, acFilter, chattyFilter, luggageFilter]);
 
   const handleTimeToggle = (period) => {
     setFilterTime(prev => 
@@ -115,7 +145,11 @@ function SearchRides() {
     setSortBy('earliest');
     setFilterTime([]);
     setVerifiedOnly(false);
-    setMaxTwoBack(false);
+    setLadiesOnlyFilter(false);
+    setPetsFilter(false);
+    setAcFilter(false);
+    setChattyFilter('');
+    setLuggageFilter('');
   };
 
   return (
@@ -178,15 +212,15 @@ function SearchRides() {
 
       {/* Main Content Area */}
       <div className="container mt-6">
-        <div style={{ display: 'grid', gridTemplateColumns: '280px minmax(0, 1fr)', gap: '32px', alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '290px minmax(0, 1fr)', gap: '32px', alignItems: 'start' }}>
           
-          {/* Left Sidebar: Real BlaBlaCar Filters */}
+          {/* Left Sidebar: Real BlaBlaCar Advanced Filters */}
           <div className="card" style={{ padding: '24px', position: 'sticky', top: '90px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--border-light)', paddingBottom: '12px' }}>
               <h3 className="heading-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Filter size={18} color="var(--primary)" /> Filters
               </h3>
-              {(filterTime.length > 0 || verifiedOnly || sortBy !== 'earliest') && (
+              {(filterTime.length > 0 || verifiedOnly || ladiesOnlyFilter || petsFilter || acFilter || chattyFilter || luggageFilter) && (
                 <button 
                   onClick={clearFilters}
                   style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 600 }}
@@ -194,6 +228,21 @@ function SearchRides() {
                   Clear all
                 </button>
               )}
+            </div>
+
+            {/* Special Safety: Ladies Only Toggle */}
+            <div className="mb-6" style={{ background: '#FDF2F8', padding: '12px', borderRadius: '12px', border: '1px solid #FCE7F3' }}>
+              <label className="checkbox-option" style={{ margin: 0, fontWeight: 700, color: '#BE185D' }}>
+                <input 
+                  type="checkbox" 
+                  checked={ladiesOnlyFilter} 
+                  onChange={(e) => setLadiesOnlyFilter(e.target.checked)} 
+                />
+                <span>🌸 Ladies Only Rides</span>
+              </label>
+              <div style={{ fontSize: '0.75rem', color: '#9D174D', marginTop: '4px', paddingLeft: '26px' }}>
+                Verified female drivers & passengers
+              </div>
             </div>
 
             {/* Sort by */}
@@ -256,10 +305,10 @@ function SearchRides() {
               </div>
             </div>
 
-            {/* Trust and Safety */}
+            {/* Preferences & Amenities */}
             <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '16px' }}>
               <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>
-                Trust & Amenities
+                Amenities & Rules
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label className="checkbox-option">
@@ -273,12 +322,38 @@ function SearchRides() {
                 <label className="checkbox-option">
                   <input 
                     type="checkbox" 
-                    checked={maxTwoBack} 
-                    onChange={(e) => setMaxTwoBack(e.target.checked)} 
+                    checked={acFilter} 
+                    onChange={(e) => setAcFilter(e.target.checked)} 
                   />
-                  <span>Max 2 in rear seat</span>
+                  <span>Air Conditioning ❄️</span>
+                </label>
+                <label className="checkbox-option">
+                  <input 
+                    type="checkbox" 
+                    checked={petsFilter} 
+                    onChange={(e) => setPetsFilter(e.target.checked)} 
+                  />
+                  <span>Pets Allowed 🐾</span>
                 </label>
               </div>
+            </div>
+
+            {/* Luggage Filter Dropdown */}
+            <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '16px', marginTop: '16px' }}>
+              <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '8px' }}>
+                Luggage Allowance
+              </label>
+              <select 
+                value={luggageFilter}
+                onChange={(e) => setLuggageFilter(e.target.value)}
+                className="input-field"
+                style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+              >
+                <option value="">Any luggage size</option>
+                <option value="Medium">Medium luggage</option>
+                <option value="Large">Large suitcase</option>
+                <option value="Small">Small bag only</option>
+              </select>
             </div>
 
           </div>
@@ -286,8 +361,8 @@ function SearchRides() {
           {/* Right Ride List Content */}
           <div>
             
-            {/* Results Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '16px' }}>
+            {/* Results Header + Post Request CTA */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
               <div>
                 <h2 className="heading-md" style={{ color: 'var(--text-main)' }}>
                   {from && to ? `${from} → ${to}` : 'Available Carpool Rides'}
@@ -296,6 +371,14 @@ function SearchRides() {
                   {loading ? 'Searching...' : `${filteredRides.length} ride${filteredRides.length === 1 ? '' : 's'} available`}
                 </p>
               </div>
+
+              <button
+                onClick={() => setRequestModalOpen(true)}
+                className="btn btn-outline btn-sm"
+                style={{ gap: '6px' }}
+              >
+                <PlusCircle size={16} /> Can't find a ride? Post request
+              </button>
             </div>
 
             {/* Content states */}
@@ -315,7 +398,6 @@ function SearchRides() {
                   return (
                     <div
                       key={ride._id}
-                      onClick={() => navigate(`/ride/${ride._id}`)}
                       className={`card ${isFull ? 'ride-full' : 'card-hover'}`}
                       style={{ 
                         padding: '24px 28px', 
@@ -327,10 +409,28 @@ function SearchRides() {
                         gap: '24px',
                         transition: 'var(--transition)'
                       }}
+                      onClick={() => navigate(`/ride/${ride._id}`)}
                     >
                       {/* Left: Journey Timeline & Driver */}
                       <div style={{ flex: 1 }}>
                         
+                        {/* Top Badges */}
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                          {ride.ladiesOnly && (
+                            <span className="badge" style={{ background: '#FCE7F3', color: '#BE185D', fontSize: '0.72rem' }}>
+                              🌸 Ladies Only
+                            </span>
+                          )}
+                          <span className="badge badge-info" style={{ fontSize: '0.72rem' }}>
+                            <Sparkles size={11} /> Instant Booking
+                          </span>
+                          {ride.chattyLevel && (
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                              <Volume2 size={13} color="var(--primary)" /> {ride.chattyLevel}
+                            </span>
+                          )}
+                        </div>
+
                         {/* Timeline */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '16px' }}>
                           
@@ -365,7 +465,7 @@ function SearchRides() {
 
                         </div>
 
-                        {/* Driver & Badges */}
+                        {/* Driver & Amenities row */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <img 
@@ -385,13 +485,15 @@ function SearchRides() {
                             </div>
                           </div>
 
-                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                            <span className="badge badge-info" style={{ fontSize: '0.75rem', gap: '4px' }}>
-                              <Sparkles size={12} /> Instant Booking
-                            </span>
+                          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                             {ride.vehicle && (
-                              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <Car size={14} /> {ride.vehicle}
+                              </span>
+                            )}
+                            {ride.petsAllowed && (
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                <Dog size={13} color="#D97706" /> Pets OK
                               </span>
                             )}
                           </div>
@@ -419,17 +521,17 @@ function SearchRides() {
             ) : (
               <div className="card" style={{ padding: '60px 24px', textAlign: 'center' }}>
                 <Car size={52} color="var(--primary)" className="mx-auto mb-4" style={{ opacity: 0.6 }} />
-                <h3 className="heading-md mb-2">No direct rides found</h3>
+                <h3 className="heading-md mb-2">No rides match your filters</h3>
                 <p className="text-body mb-6" style={{ maxWidth: '420px', margin: '0 auto 24px' }}>
-                  We couldn't find rides matching your exact criteria. Try changing the date or clearing filters.
+                  Try resetting your filters, or post a request so drivers traveling on this corridor can offer you a ride!
                 </p>
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
                   <button onClick={clearFilters} className="btn btn-outline">
                     Reset Filters
                   </button>
-                  <Link to="/offer" className="btn btn-primary">
-                    Publish this route
-                  </Link>
+                  <button onClick={() => setRequestModalOpen(true)} className="btn btn-primary">
+                    Post Ride Request
+                  </button>
                 </div>
               </div>
             )}
@@ -438,6 +540,25 @@ function SearchRides() {
 
         </div>
       </div>
+
+      {/* Ride Request Modal */}
+      <RideRequestModal 
+        isOpen={requestModalOpen}
+        onClose={() => setRequestModalOpen(false)}
+        initialFrom={from}
+        initialTo={to}
+        onSuccess={() => alert('Your ride request has been posted to the community board!')}
+      />
+
+      {/* Chat Drawer if activated */}
+      {chatRide && (
+        <ChatDrawer 
+          isOpen={!!chatRide}
+          onClose={() => setChatRide(null)}
+          ride={chatRide}
+          otherUser={chatRide.driver}
+        />
+      )}
 
     </div>
   );

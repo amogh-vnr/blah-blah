@@ -4,29 +4,47 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { 
   MapPin, Calendar, Users, Loader2, Car, Navigation, 
-  ShieldCheck, Clock, Trash2, XCircle, CheckCircle2, ChevronRight, Phone, Leaf
+  ShieldCheck, Clock, Trash2, XCircle, CheckCircle2, ChevronRight, 
+  Phone, Leaf, MessageSquare, HandCoins, QrCode, Star, Check, AlertCircle
 } from 'lucide-react';
 import Footer from '../components/Footer';
+import ChatDrawer from '../components/ChatDrawer';
+import UpiPaymentModal from '../components/UpiPaymentModal';
+import ReviewModal from '../components/ReviewModal';
 
 function Dashboard() {
   const { token, user } = useAuth();
   const navigate = useNavigate();
+  
   const [bookings, setBookings] = useState([]);
   const [publishedRides, setPublishedRides] = useState([]);
+  const [negotiations, setNegotiations] = useState([]);
+  const [myRequests, setMyRequests] = useState([]);
+  
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('bookings');
+  const [activeTab, setActiveTab] = useState('bookings'); // 'bookings' | 'published' | 'negotiations' | 'requests'
   const [actionLoading, setActionLoading] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState({ type: '', text: '' });
+
+  // Modals state
+  const [chatData, setChatData] = useState(null); // { ride, otherUser }
+  const [upiData, setUpiData] = useState(null); // { amount, driverName, route }
+  const [reviewData, setReviewData] = useState(null); // { ride, reviewee }
+  const [counterPriceInput, setCounterPriceInput] = useState({});
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [bookingsRes, ridesRes] = await Promise.all([
+      const [bookingsRes, ridesRes, negoRes, reqRes] = await Promise.all([
         axios.get('http://localhost:5000/api/bookings', { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get('http://localhost:5000/api/rides/mine', { headers: { Authorization: `Bearer ${token}` } })
+        axios.get('http://localhost:5000/api/rides/mine', { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get('http://localhost:5000/api/negotiations', { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get('http://localhost:5000/api/requests/mine', { headers: { Authorization: `Bearer ${token}` } })
       ]);
       setBookings(bookingsRes.data.data || []);
       setPublishedRides(ridesRes.data.data || []);
+      setNegotiations(negoRes.data.data || []);
+      setMyRequests(reqRes.data.data || []);
     } catch (error) {
       console.error('Failed to fetch dashboard data', error);
     } finally {
@@ -79,6 +97,39 @@ function Dashboard() {
     }
   };
 
+  const handleNegotiationAction = async (negoId, action, counterVal) => {
+    try {
+      setActionLoading(true);
+      const res = await axios.put(
+        `http://localhost:5000/api/negotiations/${negoId}/respond`,
+        { action, counterPrice: counterVal },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setFeedbackMsg({ type: 'success', text: res.data.message });
+      setTimeout(() => setFeedbackMsg({ type: '', text: '' }), 4000);
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Action failed');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleUpdateStatus = async (rideId, newStatus) => {
+    try {
+      await axios.put(
+        `http://localhost:5000/api/rides/${rideId}/status`,
+        { status: newStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setFeedbackMsg({ type: 'success', text: `Trip status marked as ${newStatus}` });
+      setTimeout(() => setFeedbackMsg({ type: '', text: '' }), 4000);
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update status');
+    }
+  };
+
   return (
     <div style={{ backgroundColor: 'var(--bg-page)', minHeight: 'calc(100vh - 70px)' }}>
       
@@ -105,7 +156,7 @@ function Dashboard() {
                   <span>Member since 2026</span>
                   <span>&bull;</span>
                   <span style={{ color: '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Leaf size={14} /> ~45 kg CO₂ saved
+                    <Leaf size={14} /> ~65 kg CO₂ saved
                   </span>
                 </div>
               </div>
@@ -146,12 +197,12 @@ function Dashboard() {
         )}
 
         {/* Tab Controls */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', borderBottom: '2px solid var(--border-light)' }}>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', borderBottom: '2px solid var(--border-light)', overflowX: 'auto' }}>
           <button 
             onClick={() => setActiveTab('bookings')}
             style={{
-              padding: '12px 24px',
-              fontSize: '1.05rem',
+              padding: '12px 20px',
+              fontSize: '1rem',
               fontWeight: 700,
               background: 'none',
               border: 'none',
@@ -159,16 +210,17 @@ function Dashboard() {
               color: activeTab === 'bookings' ? 'var(--primary)' : 'var(--text-muted)',
               cursor: 'pointer',
               marginBottom: '-2px',
-              transition: 'all 0.2s'
+              whiteSpace: 'nowrap'
             }}
           >
             My Bookings ({bookings.length})
           </button>
+
           <button 
             onClick={() => setActiveTab('published')}
             style={{
-              padding: '12px 24px',
-              fontSize: '1.05rem',
+              padding: '12px 20px',
+              fontSize: '1rem',
               fontWeight: 700,
               background: 'none',
               border: 'none',
@@ -176,18 +228,60 @@ function Dashboard() {
               color: activeTab === 'published' ? 'var(--primary)' : 'var(--text-muted)',
               cursor: 'pointer',
               marginBottom: '-2px',
-              transition: 'all 0.2s'
+              whiteSpace: 'nowrap'
             }}
           >
             Published Rides ({publishedRides.length})
           </button>
+
+          <button 
+            onClick={() => setActiveTab('negotiations')}
+            style={{
+              padding: '12px 20px',
+              fontSize: '1rem',
+              fontWeight: 700,
+              background: 'none',
+              border: 'none',
+              borderBottom: activeTab === 'negotiations' ? '3px solid var(--primary)' : '3px solid transparent',
+              color: activeTab === 'negotiations' ? 'var(--primary)' : 'var(--text-muted)',
+              cursor: 'pointer',
+              marginBottom: '-2px',
+              whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            Negotiations ({negotiations.length})
+            {negotiations.some(n => n.status === 'pending' && n.driver?._id === user?._id) && (
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary)' }}></span>
+            )}
+          </button>
+
+          <button 
+            onClick={() => setActiveTab('requests')}
+            style={{
+              padding: '12px 20px',
+              fontSize: '1rem',
+              fontWeight: 700,
+              background: 'none',
+              border: 'none',
+              borderBottom: activeTab === 'requests' ? '3px solid var(--primary)' : '3px solid transparent',
+              color: activeTab === 'requests' ? 'var(--primary)' : 'var(--text-muted)',
+              cursor: 'pointer',
+              marginBottom: '-2px',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            My Ride Requests ({myRequests.length})
+          </button>
         </div>
 
-        {/* Tab Contents */}
+        {/* Tab 1: Bookings */}
         {loading ? (
           <div className="card" style={{ padding: '60px', textAlign: 'center' }}>
             <Loader2 size={44} className="text-primary spinner mx-auto mb-4" />
-            <p className="text-body font-medium">Fetching your trips...</p>
+            <p className="text-body font-medium">Fetching trips...</p>
           </div>
         ) : activeTab === 'bookings' ? (
           bookings.length > 0 ? (
@@ -196,6 +290,7 @@ function Dashboard() {
                 if (!booking.ride) return null;
                 const rideDate = new Date(booking.ride.date);
                 const isCancelled = booking.status === 'cancelled';
+                const isPast = rideDate < new Date();
 
                 return (
                   <div key={booking._id} className="card" style={{ padding: '28px', opacity: isCancelled ? 0.7 : 1 }}>
@@ -238,7 +333,7 @@ function Dashboard() {
                       </div>
                     </div>
 
-                    {/* Driver & Actions footer */}
+                    {/* Driver & Multi-Feature Action Row */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-light)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <img 
@@ -256,23 +351,58 @@ function Dashboard() {
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        {/* Direct In-App Chat */}
+                        <button
+                          onClick={() => setChatData({ ride: booking.ride, otherUser: booking.ride.driver })}
+                          className="btn btn-primary btn-sm"
+                          style={{ gap: '6px' }}
+                        >
+                          <MessageSquare size={15} /> Chat with Driver
+                        </button>
+
+                        {/* Pay via UPI Modal */}
+                        {!isCancelled && (
+                          <button
+                            onClick={() => setUpiData({ 
+                              amount: booking.ride.price * booking.seatsBooked, 
+                              driverName: booking.ride.driver?.name,
+                              route: `${booking.ride.from} to ${booking.ride.to}` 
+                            })}
+                            className="btn btn-outline btn-sm"
+                            style={{ gap: '6px' }}
+                          >
+                            <QrCode size={15} /> Pay via UPI
+                          </button>
+                        )}
+
+                        {/* Post-Trip Review Modal */}
+                        {isPast && !isCancelled && (
+                          <button
+                            onClick={() => setReviewData({ ride: booking.ride, reviewee: booking.ride.driver })}
+                            className="btn btn-outline btn-sm"
+                            style={{ gap: '6px', color: '#D97706', borderColor: '#F59E0B' }}
+                          >
+                            <Star size={15} /> Review Trip
+                          </button>
+                        )}
+
                         <Link 
                           to={`/ride/${booking.ride._id}`}
-                          className="btn btn-outline btn-sm"
+                          className="btn btn-ghost btn-sm"
                           style={{ gap: '4px' }}
                         >
-                          View Ride Details <ChevronRight size={16} />
+                          Details <ChevronRight size={15} />
                         </Link>
 
-                        {!isCancelled && (
+                        {!isCancelled && !isPast && (
                           <button
                             onClick={() => handleCancelBooking(booking._id)}
                             className="btn btn-ghost btn-sm"
                             style={{ color: 'var(--error)', gap: '4px' }}
                             disabled={actionLoading}
                           >
-                            <XCircle size={16} /> Cancel Booking
+                            <XCircle size={15} /> Cancel
                           </button>
                         )}
                       </div>
@@ -294,7 +424,8 @@ function Dashboard() {
               </Link>
             </div>
           )
-        ) : (
+        ) : activeTab === 'published' ? (
+          /* Tab 2: Published Rides */
           publishedRides.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {publishedRides.map(ride => {
@@ -307,9 +438,12 @@ function Dashboard() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', borderBottom: '1px solid var(--border-light)', paddingBottom: '16px' }}>
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                          <span className={`badge ${isPast ? 'badge-cancelled' : 'badge-info'}`}>
-                            {isPast ? 'Completed' : 'Active Ride'}
+                          <span className={`badge ${isPast ? 'badge-cancelled' : ride.status === 'en_route' ? 'badge-pending' : 'badge-info'}`}>
+                            {isPast ? 'Completed' : ride.status === 'en_route' ? 'En Route' : 'Active Ride'}
                           </span>
+                          {ride.ladiesOnly && (
+                            <span className="badge" style={{ background: '#FCE7F3', color: '#BE185D' }}>🌸 Ladies Only</span>
+                          )}
                           <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                             Ride ID: <span style={{ fontFamily: 'monospace' }}>{ride._id.slice(-6)}</span>
                           </span>
@@ -342,20 +476,40 @@ function Dashboard() {
                       </div>
                     </div>
 
-                    {/* Vehicle & Delete actions */}
+                    {/* Status & Actions */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-light)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                         <Car size={18} color="var(--primary)" />
-                        <span>{ride.vehicle || 'Standard Passenger Vehicle'} {ride.vehicleColor ? `(${ride.vehicleColor})` : ''}</span>
+                        <span>{ride.vehicle || 'Standard Car'} {ride.vehicleColor ? `(${ride.vehicleColor})` : ''}</span>
                       </div>
 
-                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        {/* Driver status controller */}
+                        {ride.status === 'scheduled' && !isPast && (
+                          <button
+                            onClick={() => handleUpdateStatus(ride._id, 'en_route')}
+                            className="btn btn-primary btn-sm"
+                            style={{ gap: '4px' }}
+                          >
+                            <Navigation size={14} /> Start Trip
+                          </button>
+                        )}
+                        {ride.status === 'en_route' && (
+                          <button
+                            onClick={() => handleUpdateStatus(ride._id, 'completed')}
+                            className="btn btn-sm"
+                            style={{ background: 'var(--success)', color: 'white', gap: '4px' }}
+                          >
+                            <Check size={14} /> Mark Completed
+                          </button>
+                        )}
+
                         <Link 
                           to={`/ride/${ride._id}`}
                           className="btn btn-outline btn-sm"
                           style={{ gap: '4px' }}
                         >
-                          View Public Page <ChevronRight size={16} />
+                          View Public Page <ChevronRight size={15} />
                         </Link>
 
                         <button
@@ -364,7 +518,7 @@ function Dashboard() {
                           style={{ color: 'var(--error)', gap: '4px' }}
                           disabled={actionLoading}
                         >
-                          <Trash2 size={16} /> Delete Ride
+                          <Trash2 size={15} /> Delete Ride
                         </button>
                       </div>
                     </div>
@@ -385,9 +539,208 @@ function Dashboard() {
               </Link>
             </div>
           )
+        ) : activeTab === 'negotiations' ? (
+          /* Tab 3: Fare Negotiations */
+          negotiations.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {negotiations.map(nego => {
+                const isDriver = nego.driver?._id === user?._id;
+                const isPending = nego.status === 'pending';
+                const isCountered = nego.status === 'countered';
+
+                return (
+                  <div key={nego._id} className="card" style={{ padding: '24px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <span className={`badge ${nego.status === 'accepted' ? 'badge-success' : nego.status === 'rejected' ? 'badge-cancelled' : 'badge-pending'}`}>
+                            {nego.status.toUpperCase()}
+                          </span>
+                          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                            {isDriver ? `Offer from Passenger: ${nego.passenger?.name}` : `Your offer to Driver: ${nego.driver?.name}`}
+                          </span>
+                        </div>
+                        <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-main)' }}>
+                          {nego.ride?.from} &rarr; {nego.ride?.to}
+                        </div>
+                      </div>
+
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--primary)' }}>
+                          ₹{nego.proposedPrice} <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>/ seat</span>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          Asking: ₹{nego.originalPrice} &bull; {nego.seats} seat{nego.seats > 1 ? 's' : ''}
+                        </div>
+                      </div>
+                    </div>
+
+                    {nego.message && (
+                      <div style={{ background: 'var(--bg-page)', padding: '10px 14px', borderRadius: '10px', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                        "{nego.message}"
+                      </div>
+                    )}
+
+                    {isCountered && (
+                      <div style={{ background: '#FEF3C7', border: '1px solid #FDE68A', padding: '10px 14px', borderRadius: '10px', fontSize: '0.85rem', color: '#92400E', marginBottom: '16px' }}>
+                        Driver proposed counter-offer: <strong>₹{nego.counterPrice}/seat</strong>
+                      </div>
+                    )}
+
+                    {/* Driver Response Controls */}
+                    {isDriver && isPending && (
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid var(--border-light)' }}>
+                        <button
+                          onClick={() => handleNegotiationAction(nego._id, 'accept')}
+                          className="btn btn-sm"
+                          style={{ background: 'var(--success)', color: 'white', gap: '4px' }}
+                          disabled={actionLoading}
+                        >
+                          <Check size={16} /> Accept (₹{nego.proposedPrice})
+                        </button>
+
+                        <button
+                          onClick={() => handleNegotiationAction(nego._id, 'reject')}
+                          className="btn btn-ghost btn-sm"
+                          style={{ color: 'var(--error)', gap: '4px' }}
+                          disabled={actionLoading}
+                        >
+                          <XCircle size={16} /> Decline
+                        </button>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto' }}>
+                          <input 
+                            type="number"
+                            placeholder="Counter ₹"
+                            className="input-field"
+                            style={{ width: '100px', padding: '6px 10px', fontSize: '0.85rem' }}
+                            value={counterPriceInput[nego._id] || ''}
+                            onChange={(e) => setCounterPriceInput({ ...counterPriceInput, [nego._id]: e.target.value })}
+                          />
+                          <button
+                            onClick={() => handleNegotiationAction(nego._id, 'counter', counterPriceInput[nego._id])}
+                            className="btn btn-outline btn-sm"
+                            disabled={actionLoading || !counterPriceInput[nego._id]}
+                          >
+                            Counter
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Passenger accepting driver counter-offer */}
+                    {!isDriver && isCountered && (
+                      <div style={{ display: 'flex', gap: '10px', paddingTop: '12px', borderTop: '1px solid var(--border-light)' }}>
+                        <button
+                          onClick={() => handleNegotiationAction(nego._id, 'accept')}
+                          className="btn btn-primary btn-sm"
+                          disabled={actionLoading}
+                        >
+                          Accept Counter-Offer (₹{nego.counterPrice}/seat)
+                        </button>
+                        <button
+                          onClick={() => handleNegotiationAction(nego._id, 'reject')}
+                          className="btn btn-ghost btn-sm"
+                          style={{ color: 'var(--error)' }}
+                          disabled={actionLoading}
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    )}
+
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="card" style={{ padding: '60px 24px', textAlign: 'center' }}>
+              <HandCoins size={52} color="var(--primary)" className="mx-auto mb-4" style={{ opacity: 0.6 }} />
+              <h3 className="heading-md mb-2">No active negotiations</h3>
+              <p className="text-body" style={{ maxWidth: '400px', margin: '0 auto' }}>
+                When passengers or drivers negotiate trip fares, offer proposals and counters appear here.
+              </p>
+            </div>
+          )
+        ) : (
+          /* Tab 4: Ride Requests */
+          myRequests.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {myRequests.map(req => (
+                <div key={req._id} className="card" style={{ padding: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                    <div>
+                      <span className="badge badge-info" style={{ marginBottom: '6px' }}>
+                        {req.status.toUpperCase()}
+                      </span>
+                      <h4 style={{ fontWeight: 800, fontSize: '1.1rem', margin: 0 }}>
+                        {req.from} &rarr; {req.to}
+                      </h4>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        Date: {new Date(req.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })} &bull; Seats: {req.seats}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)' }}>
+                        Max Budget: ₹{req.maxBudget}
+                      </div>
+                    </div>
+                  </div>
+                  {req.notes && (
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', background: 'var(--bg-page)', padding: '8px 12px', borderRadius: '8px' }}>
+                      Note: {req.notes}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="card" style={{ padding: '60px 24px', textAlign: 'center' }}>
+              <Calendar size={52} color="var(--primary)" className="mx-auto mb-4" style={{ opacity: 0.6 }} />
+              <h3 className="heading-md mb-2">No ride requests posted</h3>
+              <p className="text-body" style={{ maxWidth: '400px', margin: '0 auto' }}>
+                If you cannot find a direct ride, you can post a community request on the board.
+              </p>
+            </div>
+          )
         )}
 
       </div>
+
+      {/* Floating In-App Chat Drawer */}
+      {chatData && (
+        <ChatDrawer 
+          isOpen={!!chatData}
+          onClose={() => setChatData(null)}
+          ride={chatData.ride}
+          otherUser={chatData.otherUser}
+        />
+      )}
+
+      {/* Instant UPI Payment Modal */}
+      {upiData && (
+        <UpiPaymentModal 
+          isOpen={!!upiData}
+          onClose={() => setUpiData(null)}
+          amount={upiData.amount}
+          driverName={upiData.driverName}
+          tripRoute={upiData.route}
+        />
+      )}
+
+      {/* Post-Trip Review Modal */}
+      {reviewData && (
+        <ReviewModal 
+          isOpen={!!reviewData}
+          onClose={() => setReviewData(null)}
+          ride={reviewData.ride}
+          reviewee={reviewData.reviewee}
+          onSuccess={() => {
+            setFeedbackMsg({ type: 'success', text: 'Thank you for your trip review!' });
+            setTimeout(() => setFeedbackMsg({ type: '', text: '' }), 4000);
+          }}
+        />
+      )}
 
       <Footer />
     </div>

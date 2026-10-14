@@ -3,7 +3,11 @@ const Booking = require('../models/Booking');
 
 exports.getRides = async (req, res, next) => {
   try {
-    const { from, to, date, seats } = req.query;
+    const { 
+      from, to, date, seats, 
+      ladiesOnly, petsAllowed, acEnabled, luggageSize, chattyLevel 
+    } = req.query;
+
     let query = {};
     
     // Only show future rides
@@ -12,13 +16,20 @@ exports.getRides = async (req, res, next) => {
     if (from) query.from = { $regex: from.trim(), $options: 'i' };
     if (to) query.to = { $regex: to.trim(), $options: 'i' };
     if (seats) query.seats = { $gte: parseInt(seats) };
+    
+    // Advanced Filters
+    if (ladiesOnly === 'true') query.ladiesOnly = true;
+    if (petsAllowed === 'true') query.petsAllowed = true;
+    if (acEnabled === 'true') query.acEnabled = true;
+    if (luggageSize) query.luggageSize = luggageSize;
+    if (chattyLevel) query.chattyLevel = chattyLevel;
+
     if (date) {
       const searchDate = new Date(date);
       query.date = {
         $gte: new Date(searchDate.setHours(0, 0, 0, 0)),
         $lt: new Date(searchDate.setHours(23, 59, 59, 999))
       };
-      // Also ensure it's not in the past
       if (query.date.$gte < new Date()) {
         query.date.$gte = new Date();
       }
@@ -27,6 +38,7 @@ exports.getRides = async (req, res, next) => {
     const rides = await Ride.find(query)
       .populate('driver', 'name picture bio phone')
       .sort({ date: 1 });
+
     res.status(200).json({ success: true, count: rides.length, data: rides });
   } catch (error) {
     next(error);
@@ -75,6 +87,28 @@ exports.getMyPublishedRides = async (req, res, next) => {
       .populate('driver', 'name picture phone')
       .sort({ date: -1 });
     res.status(200).json({ success: true, count: rides.length, data: rides });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.updateRideStatus = async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    const ride = await Ride.findById(req.params.id);
+
+    if (!ride) {
+      return res.status(404).json({ success: false, message: 'Ride not found' });
+    }
+
+    if (ride.driver.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Only the driver can update trip status' });
+    }
+
+    ride.status = status;
+    await ride.save();
+
+    res.status(200).json({ success: true, message: `Ride status updated to ${status}`, data: ride });
   } catch (error) {
     next(error);
   }

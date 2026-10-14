@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { GoogleLogin } from '@react-oauth/google';
-import { Car, Mail, Lock } from 'lucide-react';
+import { Car, Mail, Lock, AlertCircle, ShieldCheck, Sparkles, Loader2 } from 'lucide-react';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -10,7 +9,7 @@ function Login() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  const { loginWithEmail, loginWithGoogle } = useAuth();
+  const { loginWithEmail } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -25,95 +24,129 @@ function Login() {
     if (result.success) {
       navigate(from, { replace: true });
     } else {
-      setError(result.message);
+      setError(result.message || 'Invalid email or password');
       setIsLoading(false);
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse) => {
-    const result = await loginWithGoogle(credentialResponse);
+  const handleQuickDemoLogin = async (demoEmail) => {
+    setEmail(demoEmail);
+    setPassword('password123');
+    setIsLoading(true);
+    setError('');
+    const result = await loginWithEmail(demoEmail, 'password123');
     if (result.success) {
       navigate(from, { replace: true });
     } else {
-      setError(result.message);
+      setError(result.message || 'Demo login failed');
+      setIsLoading(false);
     }
   };
 
   return (
-    <div style={{ minHeight: 'calc(100vh - 73px)', display: 'flex', flexDirection: 'row' }}>
+    <div style={{ minHeight: 'calc(100vh - 70px)', display: 'flex', flexDirection: 'row', flexWrap: 'wrap' }}>
       
-      {/* Left side - Image */}
+      {/* Left Brand Panel */}
       <div 
         style={{ 
-          flex: 1, 
-          backgroundColor: 'var(--primary)', 
+          flex: '1 1 450px', 
+          background: 'linear-gradient(135deg, #054752 0%, #0056D2 100%)', 
           color: 'white', 
           display: 'flex', 
           flexDirection: 'column', 
           justifyContent: 'center', 
           alignItems: 'center',
-          padding: '40px',
+          padding: '60px 40px',
           textAlign: 'center'
         }}
-        className="auth-hero"
       >
-        <Car size={80} style={{ marginBottom: '24px' }} />
-        <h1 className="title-xl" style={{ marginBottom: '16px' }}>Welcome back</h1>
-        <p className="text-body" style={{ color: 'white', fontSize: '1.25rem', opacity: 0.9, maxWidth: '400px' }}>
-          Log in to book your next ride or manage your published journeys.
+        <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
+          <Car size={44} color="white" />
+        </div>
+        <h1 className="heading-xl" style={{ color: 'white', marginBottom: '16px' }}>Welcome back</h1>
+        <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '1.15rem', maxWidth: '420px', lineHeight: 1.6, marginBottom: '32px' }}>
+          Log in to manage your rides, check bookings, and stay connected with fellow commuters.
         </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left', background: 'rgba(255,255,255,0.1)', padding: '20px 24px', borderRadius: '16px', maxWidth: '380px', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem' }}>
+            <ShieldCheck size={18} color="#34D399" /> 100% ID-verified community
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem' }}>
+            <Sparkles size={18} color="#FBBF24" /> Instant booking on all major routes
+          </div>
+        </div>
       </div>
 
-      {/* Right side - Form */}
+      {/* Right Form Panel */}
       <div 
         style={{ 
-          flex: 1, 
+          flex: '1 1 450px', 
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'center', 
-          padding: '40px',
+          padding: '60px 40px',
           backgroundColor: 'white'
         }}
       >
-        <div style={{ width: '100%', maxWidth: '400px' }}>
-          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-            <h2 className="title-lg">Sign in to your account</h2>
+        <div style={{ width: '100%', maxWidth: '420px' }}>
+          <div style={{ marginBottom: '32px' }}>
+            <h2 className="heading-md" style={{ marginBottom: '8px' }}>Log in to your account</h2>
+            <p className="text-body" style={{ fontSize: '0.95rem' }}>Enter your details below to continue</p>
           </div>
 
           {location.state?.message && (
-            <div style={{ marginBottom: '24px', padding: '16px', backgroundColor: '#FEF2F2', color: '#DC2626', borderRadius: '8px', border: '1px solid #FCA5A5', fontWeight: 500, fontSize: '0.875rem' }}>
+            <div style={{ marginBottom: '20px', padding: '14px 18px', backgroundColor: '#EFF6FF', color: '#1D4ED8', borderRadius: '12px', border: '1px solid #BFDBFE', fontSize: '0.875rem', fontWeight: 500 }}>
               {location.state.message}
             </div>
           )}
 
           {error && (
-            <div style={{ marginBottom: '24px', padding: '16px', backgroundColor: '#FEF2F2', color: '#DC2626', borderRadius: '8px', border: '1px solid #FCA5A5', fontWeight: 500, fontSize: '0.875rem' }}>
-              {error}
+            <div style={{ marginBottom: '20px', padding: '14px 18px', backgroundColor: 'var(--error-light)', color: 'var(--error)', borderRadius: '12px', border: '1px solid #FCA5A5', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.875rem', fontWeight: 500 }}>
+              <AlertCircle size={18} />
+              <span>{error}</span>
             </div>
           )}
 
-          <div style={{ display: 'none', justifyContent: 'center', marginBottom: '32px' }}>
-            {/* GoogleLogin component removed because it requires a real Client ID */}
+          {/* Quick Demo Login Buttons */}
+          <div style={{ marginBottom: '24px', background: 'var(--bg-page)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>
+              Quick Demo Accounts (1-Click Login)
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                type="button" 
+                onClick={() => handleQuickDemoLogin('rahul@example.com')}
+                className="btn btn-sm"
+                style={{ flex: 1, background: 'white', border: '1px solid var(--border)', fontSize: '0.8rem', color: 'var(--text-main)', padding: '8px' }}
+                disabled={isLoading}
+              >
+                Rahul (Driver)
+              </button>
+              <button 
+                type="button" 
+                onClick={() => handleQuickDemoLogin('pooja@example.com')}
+                className="btn btn-sm"
+                style={{ flex: 1, background: 'white', border: '1px solid var(--border)', fontSize: '0.8rem', color: 'var(--text-main)', padding: '8px' }}
+                disabled={isLoading}
+              >
+                Pooja (Passenger)
+              </button>
+            </div>
           </div>
 
-          <div style={{ display: 'none', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
-            <div style={{ flex: 1, borderTop: '1px solid var(--border)' }}></div>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>OR</span>
-            <div style={{ flex: 1, borderTop: '1px solid var(--border)' }}></div>
-          </div>
-
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
             <div className="input-group">
-              <label htmlFor="email">Email Address</label>
+              <label htmlFor="email">Email address</label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <Mail size={20} style={{ position: 'absolute', left: '16px', color: 'var(--text-muted)' }} />
+                <Mail size={18} style={{ position: 'absolute', left: '16px', color: 'var(--text-muted)' }} />
                 <input 
                   type="email" 
                   id="email" 
                   required 
                   className="input-field" 
-                  style={{ paddingLeft: '48px' }}
-                  placeholder="you@example.com"
+                  style={{ paddingLeft: '44px' }}
+                  placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -123,13 +156,13 @@ function Login() {
             <div className="input-group">
               <label htmlFor="password">Password</label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <Lock size={20} style={{ position: 'absolute', left: '16px', color: 'var(--text-muted)' }} />
+                <Lock size={18} style={{ position: 'absolute', left: '16px', color: 'var(--text-muted)' }} />
                 <input 
                   type="password" 
                   id="password" 
                   required 
                   className="input-field" 
-                  style={{ paddingLeft: '48px' }}
+                  style={{ paddingLeft: '44px' }}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -139,19 +172,23 @@ function Login() {
 
             <button 
               type="submit" 
-              className="btn btn-primary"
-              style={{ padding: '16px', marginTop: '16px', width: '100%' }}
+              className="btn btn-primary btn-full btn-lg"
+              style={{ marginTop: '8px' }}
               disabled={isLoading}
             >
-              {isLoading ? 'Signing in...' : 'Sign in'}
+              {isLoading ? <Loader2 size={20} className="spinner" /> : 'Log In'}
             </button>
           </form>
 
-          <p style={{ textAlign: 'center', marginTop: '32px', color: 'var(--text-muted)' }}>
-            Don't have an account? <Link to="/register" style={{ color: 'var(--primary)', fontWeight: 600 }}>Sign up</Link>
+          <p style={{ textAlign: 'center', marginTop: '28px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+            Don't have an account?{' '}
+            <Link to="/register" style={{ color: 'var(--primary)', fontWeight: 700 }}>
+              Sign up for free
+            </Link>
           </p>
         </div>
       </div>
+
     </div>
   );
 }

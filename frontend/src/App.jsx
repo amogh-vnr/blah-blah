@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import SearchRides from './pages/SearchRides';
+import RideDetail from './pages/RideDetail';
 import OfferRide from './pages/OfferRide';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -17,6 +18,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/search" element={<SearchRides />} />
+            <Route path="/ride/:id" element={<RideDetail />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route 

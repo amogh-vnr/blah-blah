@@ -1,5 +1,5 @@
 const express = require('express');
-const { bookRide, getMyBookings } = require('../controllers/bookingController');
+const { bookRide, getMyBookings, cancelBooking } = require('../controllers/bookingController');
 const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -9,5 +9,9 @@ router.route('/')
 
 router.route('/:rideId')
   .post(protect, bookRide);
+
+router.route('/:id/cancel')
+  .put(protect, cancelBooking)
+  .delete(protect, cancelBooking);
 
 module.exports = router;
